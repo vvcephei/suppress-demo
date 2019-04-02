@@ -4,8 +4,10 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
+import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.time.Duration;
@@ -57,12 +59,12 @@ public class Analyzer {
         consumer.subscribe(Collections.singleton(topic));
 
         final Map<String, List<ConsumerRecord<String, App.Rollup>>> sorted = new TreeMap<>();
-        int attempts = 10;
+        int attempts = 2;
         while (attempts > 0) {
             System.out.println("polling");
             final ConsumerRecords<String, App.Rollup> poll = consumer.poll(Duration.ofSeconds(1));
             if (poll.count() > 0) {
-                attempts = 10;
+                attempts = 2;
             } else {
                 attempts--;
             }
@@ -84,11 +86,33 @@ public class Analyzer {
         System.out.println("INVALIDS");
         for (final Map.Entry<String, List<ConsumerRecord<String, App.Rollup>>> entry : sorted.entrySet()) {
             if (entry.getValue().size() > 1) {
-                System.out.printf("%d\t%s\t%s%n", entry.getValue().size(), entry.getKey(), entry.getValue());
+                System.out.printf("%d\t%s%n", entry.getValue().size(), entry.getKey());
+                for (final ConsumerRecord<String, App.Rollup> record : entry.getValue()) {
+                    System.out.println("\t" + record);
+                    pprintRecord(record);
+                }
                 invalids++;
             }
         }
 
         System.out.printf("results:%d invalids:%d%n", results, invalids);
+    }
+
+    public static void pprintRecord(final ConsumerRecord<?, ?> record) {
+        if (record.headers() != null) {
+            for (final Header header : record.headers()) {
+                if (header.key().endsWith("provenance-offset")) {
+                    System.out.println("\t\t" + header.key() + ": " + new LongDeserializer().deserialize(null, header.value()));
+                } else if (header.key().endsWith("provenance-topic")) {
+                    System.out.println("\t\t" + header.key() + ": " + new StringDeserializer().deserialize(null, header.value()));
+                } else if (header.key().endsWith("provenance-partition")) {
+                    System.out.println("\t\t" + header.key() + ": " + new IntegerDeserializer().deserialize(null, header.value()));
+                } else if (header.key().endsWith("provenance-key-string")) {
+                    System.out.println("\t\t" + header.key() + ": " + new StringDeserializer().deserialize(null, header.value()));
+                } else if (header.key().endsWith("provenance-thread")) {
+                    System.out.println("\t\t" + header.key() + ": " + new StringDeserializer().deserialize(null, header.value()));
+                }
+            }
+        }
     }
 }

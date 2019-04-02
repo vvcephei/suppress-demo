@@ -15,6 +15,8 @@ import org.apache.kafka.streams.kstream.Suppressed;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.Window;
 import org.apache.kafka.streams.state.WindowStore;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -196,7 +198,7 @@ public final class App {
                    (k, v, agg) -> Rollup.merge(agg, new Rollup(1, v, v, v, v)),
                    Materialized.<String, Rollup, WindowStore<Bytes, byte[]>>as("myagg_state").withValueSerde(new RollupSerde())
                )
-               .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()).withName("myagg_suppress_state"))
+               .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
                .mapValues(((key, rollup) -> rollup.withWindow(key.window())))
                .toStream(((stringWindowed, rollup) -> stringWindowed.key()))
                .to("output", Produced.with(Serdes.String(), new RollupSerde()));
