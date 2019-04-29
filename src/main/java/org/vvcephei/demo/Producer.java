@@ -35,10 +35,14 @@ public final class Producer {
 
     public static void main(final String[] args) throws ParseException {
         final Random keySequence = new Random(3); // is any number more random than 3? ;)
-        final Duration produceDuration = Duration.parse(args[0]);
-        final int numKeys = NumberFormat.getInstance().parse(args[1]).intValue();
+        final Random valueSequence = new Random(4); // is any number more random than 4? ;)
 
-        System.out.printf("producing %d keys for %s%n", numKeys, produceDuration);
+        final Duration produceDuration = Duration.parse(args[0]);
+        final Duration producePeriod = Duration.parse(args[1]);
+        final int numKeys = NumberFormat.getInstance().parse(args[2]).intValue();
+        final int numValues = NumberFormat.getInstance().parse(args[3]).intValue();
+
+        System.out.printf("producing %d keys and %d values, one every %s for %s%n", numKeys, numValues, producePeriod, produceDuration);
         final long start = System.currentTimeMillis();
         cleanTopics("input");
         createTopics("input");
@@ -55,18 +59,29 @@ public final class Producer {
             }
         };
 
-        produceFor("input", keys, produceDuration);
+        final Iterator<Integer> values = new Iterator<Integer>() {
+            @Override
+            public boolean hasNext() {
+                return true;
+            }
+
+            @Override
+            public Integer next() {
+                return valueSequence.nextInt(numValues);
+            }
+        };
+
+        produceFor("input", keys, values, produceDuration, producePeriod);
 
         System.out.println("done in " + Duration.ofMillis(System.currentTimeMillis() - start));
     }
 
-    private static void produceFor(final String topic, final Iterator<String> keys, final Duration duration) {
+    private static void produceFor(final String topic, final Iterator<String> keys, final Iterator<Integer> values, final Duration duration, final Duration producePeriod) {
         final Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getCanonicalName());
 
-        final Random valueSequence = new Random(4); // is any number more random than 4? ;)
 
         final NumberFormat numberFormat = NumberFormat.getInstance();
         final long start = System.nanoTime();
@@ -77,13 +92,13 @@ public final class Producer {
             long last = 0;
             while (limit > (spent = System.nanoTime() - start)) {
                 final String key = keys.next();
-                producer.send(new ProducerRecord<>(topic, key, valueSequence.nextInt(100)));
+                producer.send(new ProducerRecord<>(topic, key, values.next()));
                 producer.flush();
                 if (i % 10_000_000 == 0 || (System.nanoTime() - last) > 1_000_000_000) {
                     System.out.println("produced " + numberFormat.format(i) + " to " + topic + " in " + Duration.ofNanos(spent));
                     last = System.nanoTime();
                 }
-                Thread.sleep(10L);
+                Thread.sleep(producePeriod.toMillis());
                 i++;
             }
             System.out.println("produced " + numberFormat.format(i) + " to " + topic + " in " + Duration.ofNanos(System.nanoTime() - start));

@@ -14,7 +14,7 @@ repro:
 
 # produce data
 
-        java -cp target/suppress-demo-1.0-SNAPSHOT.jar org.vvcephei.demo.Producer PT1H 100
+        java -cp target/suppress-demo-1.0-SNAPSHOT.jar org.vvcephei.demo.Producer PT1H PT0.01S 100 100
 
 # start app
 
