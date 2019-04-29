@@ -101,15 +101,14 @@ public class Analyzer {
     public static void pprintRecord(final ConsumerRecord<?, ?> record) {
         if (record.headers() != null) {
             for (final Header header : record.headers()) {
-                if (header.key().endsWith("provenance-offset")) {
+                if (header.key().endsWith("provenance-offset")
+                    || header.key().endsWith("provenance-stream-time")) {
                     System.out.println("\t\t" + header.key() + ": " + new LongDeserializer().deserialize(null, header.value()));
-                } else if (header.key().endsWith("provenance-topic")) {
-                    System.out.println("\t\t" + header.key() + ": " + new StringDeserializer().deserialize(null, header.value()));
                 } else if (header.key().endsWith("provenance-partition")) {
                     System.out.println("\t\t" + header.key() + ": " + new IntegerDeserializer().deserialize(null, header.value()));
-                } else if (header.key().endsWith("provenance-key-string")) {
-                    System.out.println("\t\t" + header.key() + ": " + new StringDeserializer().deserialize(null, header.value()));
-                } else if (header.key().endsWith("provenance-thread")) {
+                } else if (header.key().endsWith("provenance-key-string")
+                    || header.key().endsWith("provenance-thread")
+                    || header.key().endsWith("provenance-topic")) {
                     System.out.println("\t\t" + header.key() + ": " + new StringDeserializer().deserialize(null, header.value()));
                 }
             }

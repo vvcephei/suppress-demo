@@ -15,8 +15,6 @@ import org.apache.kafka.streams.kstream.Suppressed;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.Window;
 import org.apache.kafka.streams.state.WindowStore;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -184,9 +182,6 @@ public final class App {
     }
 
     public static void main(final String[] args) {
-        if (args[0].equals("clean")) {
-            Producer.cleanTopics("output");
-        }
         Producer.createTopics("output");
 
         final StreamsBuilder builder = new StreamsBuilder();

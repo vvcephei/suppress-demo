@@ -122,7 +122,7 @@ public final class Producer {
     private static Set<String> intersection(final Set<String> left, final Set<String> right) {
         final Set<String> result = new HashSet<>();
         for (final String l : left) {
-            if (right.contains(l)){
+            if (right.contains(l)) {
                 result.add(l);
             }
         }
